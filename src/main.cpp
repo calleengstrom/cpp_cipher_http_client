@@ -21,7 +21,7 @@
 #include <string>
 #include <optional>
 #include <vector>
-
+#include <algorithm>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -151,9 +151,16 @@ std::optional<std::string> sendRequest(const std::string &host,
      */
 
     closesocket;
-    //std::cout << "Request sent to: " << host << ":" << port << path << std::endl;
+    // std::cout << "Request sent to: " << host << ":" << port << path << std::endl;
     return response.body;
 }
+
+
+std::string invert(std::string text){
+    reverse(std::begin(text),std::end(text));
+    return text;
+}
+
 
 int main()
 {
@@ -213,19 +220,43 @@ int main()
         "/playfair-cipher",
     };
 
+    std::vector<std::string> craked;
     for (const auto &path : endpoints)
     {
         // std::string p = "/ceasar-cipher";
         auto r_response = sendRequest(HOST, PORT, path);
 
+
+
         if (r_response.has_value())
         {
-            std::cout << r_response.value() << std::endl;
+            // std::cout << r_response.value() << std::endl;
+
+            JsonParser json(r_response.value());
+            auto key = json.get("key");
+            auto ciphertext = json.get("cipherText");
+            if (key.has_value())
+            {
+                std::cout << "Cipher: \n" << path <<"  "<<key.value() << "\nChipher : " << ciphertext.value() << std::endl<<std::endl;
+                
+            }
+            if(path == "/inverse-cipher"){
+                craked.push_back(invert(ciphertext.value()));
+            }
+
+            
         }
     }
+    for(std::string &s : craked){
+        std::cout << s << std::endl;
+    }
+
 
 #ifdef _WIN32
-        WSACleanup();
+    WSACleanup();
 #endif
-        return 0;
+    return 0;
+    
+    
+    
 }
