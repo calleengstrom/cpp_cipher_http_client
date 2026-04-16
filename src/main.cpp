@@ -22,6 +22,9 @@
 #include <optional>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <bits/stdc++.h>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -155,15 +158,282 @@ std::optional<std::string> sendRequest(const std::string &host,
     return response.body;
 }
 
-
-std::string invert(std::string text){
-    reverse(std::begin(text),std::end(text));
+std::string invert(std::string text)
+{
+    reverse(std::begin(text), std::end(text));
     return text;
+}
+
+
+#define SIZE 100
+
+/* char_set = "ABCDEFGHIJKLMNOPQRSTUVWXYZ
+abcdefghijklmnopqrstuvwxyz0123456789+/" */
+char* base64Decoder(std::string encoded, int len_str)
+{
+    char* decoded_string;
+
+    decoded_string = (char*)malloc(sizeof(char) * SIZE);
+
+    int i, j, k = 0;
+
+    // stores the bitstream.
+    int num = 0;
+
+    // count_bits stores current
+    // number of bits in num.
+    int count_bits = 0;
+
+    // selects 4 characters from
+    // encoded string at a time.
+    // find the position of each encoded
+    // character in char_set and stores in num.
+    for (i = 0; i < len_str; i += 4) 
+    {
+        num = 0, count_bits = 0;
+        for (j = 0; j < 4; j++)
+        {
+            
+            // make space for 6 bits.
+            if (encoded[i + j] != '=') 
+            {
+                num = num << 6;
+                count_bits += 6;
+            }
+
+            /* Finding the position of each encoded 
+            character in char_set 
+            and storing in "num", use OR 
+            '|' operator to store bits.*/
+
+            // encoded[i + j] = 'E', 'E' - 'A' = 5
+            // 'E' has 5th position in char_set.
+            if (encoded[i + j] >= 'A' && encoded[i + j] <= 'Z')
+                num = num | (encoded[i + j] - 'A');
+
+            // encoded[i + j] = 'e', 'e' - 'a' = 5,
+            // 5 + 26 = 31, 'e' has 31st position in char_set.
+            else if (encoded[i + j] >= 'a' && encoded[i + j] <= 'z')
+                num = num | (encoded[i + j] - 'a' + 26);
+
+            // encoded[i + j] = '8', '8' - '0' = 8
+            // 8 + 52 = 60, '8' has 60th position in char_set.
+            else if (encoded[i + j] >= '0' && encoded[i + j] <= '9')
+                num = num | (encoded[i + j] - '0' + 52);
+
+            // '+' occurs in 62nd position in char_set.
+            else if (encoded[i + j] == '+')
+                num = num | 62;
+
+            // '/' occurs in 63rd position in char_set.
+            else if (encoded[i + j] == '/')
+                num = num | 63;
+
+            // ( str[i + j] == '=' ) remove 2 bits
+            // to delete appended bits during encoding.
+            else {
+                num = num >> 2;
+                count_bits -= 2;
+            }
+        }
+
+        while (count_bits != 0)
+        {
+            count_bits -= 8;
+
+            // 255 in binary is 11111111
+            decoded_string[k++] = (num >> count_bits) & 255;
+        }
+    }
+
+    // place NULL character to mark end of string.
+    decoded_string[k] = '\0';
+
+    return decoded_string;
+}
+
+std::string xorShift(std::string message){
+    std::string readableMsg;
+    char nc;
+    for(char &c : message){
+        if(c == ' '){
+            readableMsg.push_back(c);
+        }
+        else{
+        nc = c ^=(3);
+        readableMsg.push_back(nc);
+        }
+    }
+    return message;
+}
+
+std::string rail_fence(std::string message,int key)
+{
+    // create the matrix to cipher plain text
+    // key = rows , length(text) = columns
+    char rail[key][message.length()];
+
+    // filling the rail matrix to distinguish filled
+    // spaces from blank ones
+    for (int i=0; i < key; i++)
+        for (int j=0; j < message.length(); j++)
+            rail[i][j] = '\n';
+
+    // to find the direction
+    bool dir_down;
+
+    int row = 0, col = 0;
+
+    // mark the places with '*'
+    for (int i=0; i < message.length(); i++)
+    {
+        // check the direction of flow
+        if (row == 0)
+            dir_down = true;
+        if (row == key-1)
+            dir_down = false;
+
+        // place the marker
+        rail[row][col++] = '*';
+
+        // find the next row using direction flag
+        dir_down?row++ : row--;
+    }
+
+    // now we can construct the fill the rail matrix
+    int index = 0;
+    for (int i=0; i<key; i++)
+        for (int j=0; j<message.length(); j++)
+            if (rail[i][j] == '*' && index<message.length())
+                rail[i][j] = message[index++];
+
+
+    // now read the matrix in zig-zag manner to construct
+    // the resultant text
+    std::string result;
+
+    row = 0, col = 0;
+    for (int i=0; i< message.length(); i++)
+    {
+        // check the direction of flow
+        if (row == 0)
+            dir_down = true;
+        if (row == key-1)
+            dir_down = false;
+
+        // place the marker
+        if (rail[row][col] != '*')
+            result.push_back(rail[row][col++]);
+
+        // find the next row using direction flag
+        dir_down?row++: row--;
+    }
+    return result;
+}
+
+std::string decryptRot13(std::string message)
+{
+    std::string decipher;
+
+    for (char &s : message)
+    {
+        if (s >= 'a' && s <= 'z')
+        {
+            decipher.push_back('a' + (s - 'a' + 13) % 26);
+        }
+        else if (s >= 'A' && s <= 'Z')
+        {
+            decipher.push_back('A' + (s - 'A' + 13) % 26);
+        }
+        else{
+            decipher.push_back(s);
+        }
+    }
+    return decipher;
+}
+
+std::string decryptCeasar5(std::string message)
+{
+    std::string decipher;
+
+    for (char &s : message)
+    {
+        if (s >= 'a' && s <= 'z')
+        {
+            decipher.push_back('a' + (s - 'a' - 5) % 26);
+        }
+        else if (s >= 'A' && s <= 'Z')
+        {
+            decipher.push_back('A' + (s - 'A' - 5) % 26);
+        }
+        else{
+            decipher.push_back(s);
+        }
+    }
+    return decipher;
+}
+
+std::string base64(std::string message)
+{
+    std::string decipher;
+
+    for (char &s : message)
+    {
+       s+=64;
+       decipher.push_back(s);
+    }
+    return decipher;
+}
+
+std::string subi(std::string message){
+std::string decipher;
+    std::string subitext = "qwertyuiopasdfghjklzxcvbnm";
+    std::array<char, 26> inv;
+    for (int i =0; i < 26;i++){
+        inv[subitext[i]-'a'] = 'a' + i;
+    }
+    char nc;
+    std::transform(message.begin(),message.end(),message.begin(),::tolower);
+    for (char &c : message)
+    {
+        if(c == ' ' ){
+            decipher.push_back(c);
+        }
+        else{
+        int i = c-'a' ;
+        decipher.push_back(inv[i]);
+        std::cout << i << std::endl;
+        }
+       
+    }
+    return decipher;
+}
+
+std::string atbash(std::string message)
+{
+    std::string decipher;
+
+    for (char &s : message)
+    {
+        if (s >= 'a' && s <= 'z')
+        {
+            decipher.push_back('z' - (s - 'a') );
+        }
+        else if (s >= 'A' && s <= 'Z')
+        {
+            decipher.push_back('Z' - (s - 'A') );
+        }
+        else{
+            decipher.push_back(s);
+        }
+    }
+    return decipher;
 }
 
 
 int main()
 {
+
     const std::string HOST = "172.20.203.149";
     const int PORT = 8080;
 
@@ -226,8 +496,6 @@ int main()
         // std::string p = "/ceasar-cipher";
         auto r_response = sendRequest(HOST, PORT, path);
 
-
-
         if (r_response.has_value())
         {
             // std::cout << r_response.value() << std::endl;
@@ -237,26 +505,45 @@ int main()
             auto ciphertext = json.get("cipherText");
             if (key.has_value())
             {
-                std::cout << "Cipher: \n" << path <<"  "<<key.value() << "\nChipher : " << ciphertext.value() << std::endl<<std::endl;
-                
+               // std::cout << "Cipher: \n" << path <<"  "<<key.value() << "\nChipher : " << ciphertext.value() << std::endl<<std::endl;
             }
-            if(path == "/inverse-cipher"){
+            if (path == "/inverse-cipher")
+            {
                 craked.push_back(invert(ciphertext.value()));
             }
-
+            if (path == "/rot13-cipher")
+            {
+                craked.push_back(decryptRot13(ciphertext.value()));
+            }
+            if (path == "/ceasar-cipher")
+            {
+                craked.push_back(decryptCeasar5(ciphertext.value()));
+            }
+            if (path == "/atbash-cipher")
+            {
+                craked.push_back(atbash(ciphertext.value()));
+            }
+            if(path == "/base64-cipher"){
+                craked.push_back(base64Decoder(ciphertext.value(),(ciphertext.value().length())));
+            }
+            if(path == "/xor-cipher"){
+                craked.push_back(xorShift(ciphertext.value()));
+            }if(path == "/rail-fence-cipher"){
+                craked.push_back(rail_fence(ciphertext.value(),7));
+            }
+            if(path == "/substitution-cipher"){
+                craked.push_back(subi(ciphertext.value()));
+            }
             
         }
     }
-    for(std::string &s : craked){
-        std::cout << s << std::endl;
+    for (std::string &s : craked)
+    {
+        std::cout << s <<"\n" << std::endl;
     }
-
 
 #ifdef _WIN32
     WSACleanup();
 #endif
     return 0;
-    
-    
-    
 }
